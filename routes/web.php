@@ -26,21 +26,13 @@ Route::get('/home', 'HomeController@index')->name('home');
 
 Route::resource('conversations', 'ConversationsController');
 Route::resource('messages', 'MessagesController');
-
-
 Route::get('ajax', 'ConversationsController@ajax')->name('ajax');
 
-
-Route::get('/sendchat', function(){
-    $users = User::all();
-    return view('chat.sendchat')->with(compact('users'));
-});
-
 Route::get('/message', function(){
-    return view('chat.message');
+    return view('chat.inbox');
 });
 
-Route::get('/result', function(){
+Route::get('/inbox', function(){
     $id = Auth::user()->id;
     $data = array();
     $conversations = User::find($id)->conversations; //getting all the conversation in which this user is participating
@@ -70,8 +62,7 @@ Route::get('/result', function(){
                 );
         }
     }
-    return view('chat.message')->with(compact('data'));
-    echo json_encode($data);
+    return view('chat.inbox')->with(compact('data'));
 });
 
 //Getting conversation in box
@@ -113,3 +104,62 @@ Route::get('/live-messages', function(Request $request){
 
     //echo $request['conversation_id'];
 })->name('live-messages');
+
+Route::get('users', function(Request $request){
+    $users = User::all();
+    return view('chat.users')->with(compact('users'));
+});
+
+Route::get('get-con', function(Request $request){
+    $input = $request->all();
+    $user1 = Auth::user()->id;
+    $user2 = $input['user_id'];
+    $check = 0;
+
+    //Getting all the records in which logged in user is involved
+    $user1_conversations = ConversationUser::where('user_id', $user1)->get();
+    //echo $user1_conversations;
+    foreach($user1_conversations as $con){  //this iteration is for number of conversation_id
+        $conversations = ConversationUser::where('conversation_id', $con->conversation_id)->where('user_id', $user2)->get();
+        if(!$conversations->isEmpty()){
+            $check = 1;
+        }
+    }
+    return response()->json([
+        'check' => $check,
+        'user2' => $user2
+    ]);
+})->name('get-con');
+
+Route::get('new-chat/{user_id}', function($user_id){
+    $user = User::find($user_id);
+    return view('chat.new')->with(compact('user'));
+})->name('new-chat');
+
+Route::post('make-conversation', function(Request $request){
+    $input = $request->all();
+
+    //Create conversation
+    $conversationId = Conversations::create([
+        'user_id' => Auth::user()->id
+    ]);
+
+    //Sender
+    $conversation_user = ConversationUser::create([
+        'user_id' => Auth::user()->id,
+        'conversation_id' => $conversationId->id
+    ]);
+
+    //reciever
+    ConversationUser::firstOrCreate([
+        'user_id' => $request['user2_id'],
+        'conversation_id' => $conversationId->id
+    ]);
+
+    Messages::create([
+        'user_id' => Auth::user()->id,
+        'conversation_id' => $conversationId->id,
+        'message' => $request['message']
+    ]);
+
+})->name('make-conversation');

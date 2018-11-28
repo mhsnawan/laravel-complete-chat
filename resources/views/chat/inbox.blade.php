@@ -2,8 +2,8 @@
 
 @section('content')
 <div class="container">
-<h3 class=" text-center">Messaging</h3>
-<div class="messaging">
+    <h3 class=" text-center">Messaging</h3>
+    <div class="messaging">
       <div class="inbox_msg">
         <div class="inbox_people">
           <div class="headind_srch">
@@ -21,7 +21,7 @@
 
           <div class="inbox_chat">
             @foreach($data as $item)
-            <div class="chat_list" onclick="clickConversation({{ $item['user1_id'] }}, {{ $item['conversation_id'] }})">
+            <div class="chat_list {{ $item['conversation_id'] }}" onclick="clickConversation({{ $item['user1_id'] }}, {{ $item['conversation_id'] }})">
               <div class="chat_people">
                 <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
                 <div class="chat_ib">
@@ -50,14 +50,18 @@
     <script>
         var conversation_id = 0;
         var user1_id = 0;
+        var previous_con_id=0;
         /////////////////////////////Getting Conversation when clicking on user./////////////////////////////
         function clickConversation(user_id, abc){
+            $('.' + previous_con_id).removeClass("active_chat");
+            $('.' + abc).addClass("active_chat");
             user1_id = user_id;
             conversation_id = abc;
             getMessages(user1_id, conversation_id);
         }
 
         function getMessages(user1_id, con){
+            previous_con_id = con;
             $('.msg_history').empty();
             $.ajax({
                 url: "{{ route('getmessages') }}",
@@ -156,17 +160,14 @@
                                         <span class="time_date"> `+time+`    |    `+date+`</span></div>
                                     </div>
                                 </div>`);
-
                         });
                     }
                     setTimeout(liveChat, 1000);
-
                 },
                 error: function(){
                     setTimeout(liveChat, 5000);
                 }
             });
-
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
